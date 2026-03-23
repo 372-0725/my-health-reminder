@@ -42,5 +42,208 @@ button { margin: 6px; padding: 10px; }
 <button id="toggle">開始する</button>
 <p id="last"></p>
 
-<h2>今の状態を記
-
+<h2>今の状態を記録</h2>
+<div>
+  <button onclick="record('歯が離れてリラックス')">歯が離れてリラックス</button>
+  <button onclick="record('上下の歯が触れている')">上下の歯が触れている</button>
+  <button onclick="record('強い噛み締め')">強い噛み締め</button>
+  <button onclick="record('姿勢が崩れている')">姿勢が崩れている</button>
+  <button onclick="record('良い姿勢を保っている')">良い姿勢を保っている</button>
+</div>
+
+<div id="stats" class="stats">
+  <h2>今日の改善指標</h2>
+  <div id="statsContent"></div>
+</div>
+
+<div id="log">
+  <h2>今日の記録</h2>
+  <ul id="list"></ul>
+</div>
+
+<div id="history">
+  <h2>過去7日間の改善推移</h2>
+  <ul id="historyList"></ul>
+</div>
+
+<script>
+let enabled = false;
+let timerId = null;
+let minInterval = 10;
+let maxInterval = 20;
+
+function loadSettings(){
+  const saved = localStorage.getItem('reminderSettings');
+  if(saved){
+    const settings = JSON.parse(saved);
+    minInterval = settings.minInterval || 10;
+    maxInterval = settings.maxInterval || 20;
+    document.getElementById('minInterval').value = minInterval;
+    document.getElementById('maxInterval').value = maxInterval;
+  }
+  updateSliderDisplay();
+}
+
+function saveSettings(){
+  localStorage.setItem('reminderSettings', JSON.stringify({ minInterval, maxInterval }));
+}
+
+function updateSliderDisplay(){
+  document.getElementById('minValue').innerText = minInterval + '分';
+  document.getElementById('maxValue').innerText = maxInterval + '分';
+  document.getElementById('rangeDisplay').innerText = minInterval + '〜' + maxInterval + '分';
+}
+
+document.getElementById('minInterval').oninput = (e) => {
+  minInterval = parseInt(e.target.value);
+  if(minInterval > maxInterval){
+    maxInterval = minInterval;
+    document.getElementById('maxInterval').value = maxInterval;
+  }
+  saveSettings();
+  updateSliderDisplay();
+};
+
+document.getElementById('maxInterval').oninput = (e) => {
+  maxInterval = parseInt(e.target.value);
+  if(maxInterval < minInterval){
+    minInterval = maxInterval;
+    document.getElementById('minInterval').value = minInterval;
+  }
+  saveSettings();
+  updateSliderDisplay();
+};
+
+function randomInterval(){ 
+  return Math.floor(Math.random() * (maxInterval - minInterval + 1) + minInterval) * 60 * 1000; 
+}
+
+function requestPermission(){ 
+  if("Notification" in window){ 
+    Notification.requestPermission(); 
+  }
+}
+
+function sendReminder(){
+  const t = new Date().toLocaleTimeString();
+  document.getElementById('last').innerText = '最後のリマインダー: ' + t;
+  if(Notification.permission === 'granted'){
+    const notification = new Notification('肩・あごチェックの時間です', { 
+      body: '歯を離す / 肩の力を抜く / 姿勢リセット',
+      tag: 'health-reminder'
+    });
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+    };
+  }
+}
+
+function schedule(){
+  timerId = setTimeout(()=>{ sendReminder(); schedule(); }, randomInterval());
+}
+
+document.getElementById('toggle').onclick = ()=>{
+  enabled = !enabled;
+  if(enabled){ 
+    requestPermission(); 
+    schedule(); 
+    document.getElementById('toggle').innerText='停止する'; 
+  }
+  else{ 
+    clearTimeout(timerId); 
+    document.getElementById('toggle').innerText='開始する'; 
+  }
+};
+
+function getTodayKey(){
+  const today = new Date();
+  return today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+}
+
+function getRecords(){
+  const key = getTodayKey();
+  const data = localStorage.getItem('healthRecords_' + key);
+  return data ? JSON.parse(data) : [];
+}
+
+function saveRecords(records){
+  const key = getTodayKey();
+  localStorage.setItem('healthRecords_' + key, JSON.stringify(records));
+}
+
+function record(type){
+  const li = document.createElement('li');
+  const time = new Date().toLocaleTimeString();
+  li.innerText = time + ' — ' + type;
+  document.getElementById('list').appendChild(li);
+  
+  const records = getRecords();
+  records.push({ time: time, type: type, timestamp: new Date().getTime() });
+  saveRecords(records);
+  
+  updateStats();
+}
+
+function updateStats(){
+  const records = getRecords();
+  const stats = {
+    '良い状態': 0,
+    '注意が必要': 0,
+    '改善が必要': 0
+  };
+  
+  records.forEach(r => {
+    if(r.type === '歯が離れてリラックス' || r.type === '良い姿勢を保っている'){
+      stats['良い状態']++;
+    } else if(r.type === '上下���歯が触れている'){
+      stats['注意が必要']++;
+    } else {
+      stats['改善が必要']++;
+    }
+  });
+  
+  const total = records.length;
+  const goodRate = total > 0 ? Math.round(stats['良い状態'] / total * 100) : 0;
+  
+  const html = `
+    <div class="stat-item"><span class="good">✓ 良い状態: ${stats['良い状態']}回</span></div>
+    <div class="stat-item"><span class="neutral">⚠ 注意が必要: ${stats['注意が必要']}回</span></div>
+    <div class="stat-item"><span class="bad">✗ 改善が必要: ${stats['改善が必要']}回</span></div>
+    <div class="stat-item" style="font-size: 18px; margin-top: 15px;">
+      改善度: <span class="good">${goodRate}%</span>
+    </div>
+  `;
+  document.getElementById('statsContent').innerHTML = html;
+}
+
+function showHistory(){
+  const historyList = document.getElementById('historyList');
+  historyList.innerHTML = '';
+  
+  for(let i = 6; i >= 0; i--){
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const key = date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
+    const data = localStorage.getItem('healthRecords_' + key);
+    const records = data ? JSON.parse(data) : [];
+    
+    if(records.length > 0){
+      const goodCount = records.filter(r => r.type === '歯が離れてリラックス' || r.type === '良い姿勢を保っている').length;
+      const rate = Math.round(goodCount / records.length * 100);
+      
+      const li = document.createElement('li');
+      li.className = 'day-record';
+      li.innerHTML = `<strong>${key}</strong>: 改善度 <span class="good">${rate}%</span> (${records.length}回記録)`;
+      historyList.appendChild(li);
+    }
+  }
+}
+
+// ページ読み込み時に設定を読み込んで統計を更新
+loadSettings();
+updateStats();
+showHistory();
+</script>
+</body>
+</html>
