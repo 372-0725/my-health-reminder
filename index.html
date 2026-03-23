@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<title>BruxApp-style Reminder</title>
+<style>
+body { font-family: sans-serif; padding: 20px; }
+button { margin: 6px; padding: 10px; }
+#log { margin-top: 20px; }
+</style>
+</head>
+<body>
+<h1>BruxApp‑style 姿勢 & 噛み締めチェック</h1>
+<button id="toggle">開始する</button>
+<p id="last"></p>
+
+<h2>今の状態を記録</h2>
+<div>
+  <button onclick="record('歯が離れてリラックス')">歯が離れてリラックス</button>
+  <button onclick="record('上下の歯が触れている')">上下の歯が触れている</button>
+  <button onclick="record('強い噛み締め')">強い噛み締め</button>
+  <button onclick="record('姿勢が崩れている')">姿勢が崩れている</button>
+  <button onclick="record('良い姿勢を保っている')">良い姿勢を保っている</button>
+</div>
+
+<div id="log"><h2>今日の記録</h2><ul id="list"></ul></div>
+
+<script>
+let enabled = false;
+let timerId = null;
+
+function randomInterval(){ return Math.floor(Math.random()*(90-40+1)+40)*60*1000; }
+
+function requestPermission(){ if("Notification" in window){ Notification.requestPermission(); }}
+
+function sendReminder(){
+  const t = new Date().toLocaleTimeString();
+  document.getElementById('last').innerText = '最後のリマインダー: ' + t;
+  if(Notification.permission === 'granted'){
+    new Notification('肩・あごチェックの時間です', { body: '歯を離す / 肩の力を抜く / 姿勢リセット' });
+  }
+}
+
+function schedule(){
+  timerId = setTimeout(()=>{ sendReminder(); schedule(); }, randomInterval());
+}
+
+document.getElementById('toggle').onclick = ()=>{
+  enabled = !enabled;
+  if(enabled){ requestPermission(); schedule(); document.getElementById('toggle').innerText='停止する'; }
+  else{ clearTimeout(timerId); document.getElementById('toggle').innerText='開始する'; }
+};
+
+function record(type){
+  const li = document.createElement('li');
+  li.innerText = new Date().toLocaleTimeString() + ' — ' + type;
+  document.getElementById('list').appendChild(li);
+}
+</script>
+</body>
+</html>
