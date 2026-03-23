@@ -59,8 +59,7 @@ function sendReminder(){
   if(Notification.permission === 'granted'){
     const notification = new Notification('肩・あごチェックの時間です', { 
       body: '歯を離す / 肩の力を抜く / 姿勢リセット',
-      tag: 'health-reminder',
-      requireInteraction: true  
+      tag: 'health-reminder'
     });
   }
 }
