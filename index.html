@@ -1,25 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Health Reminder</title>
+<meta charset="UTF-8" />
+<title>BruxApp-style Reminder</title>
+<style>
+body { font-family: sans-serif; padding: 20px; }
+button { margin: 6px; padding: 10px; }
+#log { margin-top: 20px; }
+.stats { background: #f0f0f0; padding: 15px; border-radius: 5px; margin: 15px 0; }
+.stat-item { margin: 10px 0; }
+.good { color: green; font-weight: bold; }
+.bad { color: red; font-weight: bold; }
+.neutral { color: orange; font-weight: bold; }
+#history { margin-top: 20px; }
+.day-record { background: #f9f9f9; padding: 10px; margin: 10px 0; border-left: 4px solid #4CAF50; }
+.settings { background: #e8f4f8; padding: 15px; border-radius: 5px; margin: 15px 0; }
+.slider-container { margin: 15px 0; }
+.slider-container label { display: block; margin: 10px 0 5px 0; font-weight: bold; }
+.slider-container input[type="range"] { width: 100%; }
+.slider-value { display: inline-block; margin-left: 10px; font-weight: bold; color: #2196F3; }
+</style>
 </head>
 <body>
-    <h1>Health Reminder Settings</h1>
+<h1>BruxApp‑style 姿勢 & 噛み締めチェック</h1>
 
-    <h2>Notification Interval</h2>
-    <label for="reminder-interval">Set your reminder interval (in minutes):</label>
-    <input type="number" id="reminder-interval" name="reminder-interval" min="1" placeholder="Enter minutes...">
-    <button id="save-interval">Save Interval</button>
+<div class="settings">
+  <h2>⚙️ リマインダー設定</h2>
+  <div class="slider-container">
+    <label for="minInterval">最小間隔（分）:</label>
+    <input type="range" id="minInterval" min="1" max="30" value="10">
+    <span class="slider-value" id="minValue">10分</span>
+  </div>
+  <div class="slider-container">
+    <label for="maxInterval">最大間隔（分）:</label>
+    <input type="range" id="maxInterval" min="1" max="60" value="20">
+    <span class="slider-value" id="maxValue">20分</span>
+  </div>
+  <p style="color: #666; font-size: 14px;">ランダムに <span id="rangeDisplay">10〜20分</span> の間隔でリマインダーが送信されます</p>
+</div>
 
-    <script>
-        document.getElementById('save-interval').onclick = function() {
-            const interval = document.getElementById('reminder-interval').value;
-            console.log('Reminder interval set to:', interval);
-            // Code to save interval configuration
-            // This can be stored in local storage or submitted to a server
-        };
-    </script>
-</body>
-</html>
+<button id="toggle">開始する</button>
+<p id="last"></p>
+
+<h2>今の状態を記
+
