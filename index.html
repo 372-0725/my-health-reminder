@@ -37,7 +37,14 @@ function sendReminder(){
   const t = new Date().toLocaleTimeString();
   document.getElementById('last').innerText = '最後のリマインダー: ' + t;
   if(Notification.permission === 'granted'){
-    new Notification('肩・あごチェックの時間です', { body: '歯を離す / 肩の力を抜く / 姿勢リセット' });
+    const notification = new Notification('肩・あごチェックの時間です', { 
+      body: '歯を離す / 肩の力を抜く / 姿勢リセット',
+      tag: 'health-reminder'
+    });
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+    };
   }
 }
 
